@@ -94,16 +94,35 @@ export default function Page() {
   const availableSlots = generateTimeSlots(settings.shifts.morning.start, settings.shifts.morning.end, settings.slotSize);
 
   // 4. FUNKCIJA ZA REZERVACIJU (S DATUMOM I SIGURNOŠĆU)
-  const handleBooking = async (e) => {
+        const handleBooking = async (e) => {
     e.preventDefault();
-    
-    if (!name || !phone || !selectedTime) {
-      alert("Bitte füllen Sie alle Felder aus. 🛑");
+    setIsSending(true); // Palimo "Wird gesendet..." na gumbu
+
+    // 1. KIRURŠKO ČIŠĆENJE I VALIDACIJA
+    // Ime: dopuštamo samo slova (uključujući njemačka š, đ, č, ć, ž i ä, ö, ü, ß) i razmake
+    const cleanName = name.replace(/[^a-zA-Zà-žÀ-ŽäöüÄÖÜß\s]/g, "").trim();
+    // Telefon: dopuštamo samo brojke
+    const cleanPhone = phone.replace(/\D/g, "");
+
+    // Sigurnosni osigurači (Validacija)
+    if (cleanName.length < 3) {
+      alert("Bitte geben Sie einen gültigen Namen ein (nur Buchstaben). 👤");
+      setIsSending(false);
+      return;
+    }
+    if (cleanPhone.length < 7 || cleanPhone.length > 15) {
+      alert("Bitte geben Sie eine gültige Telefonnummer ein. 📞");
+      setIsSending(false);
+      return;
+    }
+    if (!selectedTime) {
+      alert("Bitte wählen Sie eine Uhrzeit aus. 🕒");
+      setIsSending(false);
       return;
     }
 
     try {
-      // PROVJERA: Da nam se netko ne "ušeta" u istu milisekundu
+      // 2. SKENER (ANTI-SUDAR): Provjera je li termin u međuvremenu zauzet
       const q = query(
         collection(db, "bookings"), 
         where("date", "==", selectedDate),
@@ -114,28 +133,28 @@ export default function Page() {
       const snapshot = await getDocs(q);
       
       if (snapshot.size > 0) { 
-              // Brišemo alert i palimo naš luksuzni modal
-      setShowSuccess(true); 
-      setTimeout(() => setShowSuccess(false), 5000); 
-
+        alert("Dieser Termin wurde gerade reserviert. Bitte wählen Sie eine andere Zeit. 🛑");
+        setIsSending(false);
         return;
       }
 
-      // AKCIJA: Pišemo u ormar s datumom!
+      // 3. SLANJE: Pišemo u "ormar" (Firebase) s čistim podacima
       await addDoc(collection(db, "bookings"), {
-        customerName: name,
-        customerPhone: phone,
-        date: selectedDate, // NOVO: Sprema dan kad klijentica dolazi
+        customerName: cleanName,
+        customerPhone: cleanPhone,
+        serviceName: selectedService?.name || "Premium Service", // Pamti koju je sliku kliknula!
+        date: selectedDate,
         time: selectedTime,
         status: "pending",
         createdAt: serverTimestamp(),
       });
 
-            // Brišemo alert i palimo naš luksuzni modal
+      // 4. TRIJUMF: Gasimo slanje i palimo luksuzni crni Alert
+      setIsSending(false);
       setShowSuccess(true); 
       setTimeout(() => setShowSuccess(false), 5000); 
 
-      // RESET: Čistimo stol
+      // 5. RESET: Čistimo stol za iduću klijenticu
       setName("");
       setPhone("");
       setSelectedTime(null);
@@ -143,8 +162,10 @@ export default function Page() {
     } catch (error) {
       console.error("Firebase Error: ", error);
       alert("Ein technischer Fehler ist aufgetreten. Bitte versuchen Sie es erneut. 🛑");
+      setIsSending(false);
     }
   };
+
 
   return (
     <main className="relative flex flex-col items-center overflow-x-hidden">
@@ -461,3 +482,4 @@ export default function Page() {
     </main>
   );
 }
+

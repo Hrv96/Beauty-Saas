@@ -1,26 +1,27 @@
 @import "tailwindcss";
 
+/* 1. KIRURŠKO DEFINIRANJE BOJA (UBIJAMO DARK MODE) */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fcfaff; /* Luksuzna mramorno-bijela */
+  --foreground: #18181b; /* Duboka cink-crna za tekst */
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* 2. FORCE WHITE BACKGROUND - Ne dopuštamo uređajima da mijenjaju boje */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--background) !important;
+  color: var(--foreground) !important;
+  font-family: 'Inter', sans-serif; /* Ili tvoj Arial ako želiš */
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+/* 3. RESET ZA FORM INPUTE (Da ne budu sivi na mobitelu) */
+input, select, textarea {
+  background-color: white !important;
+  color: #18181b !important;
+}
+
+/* 4. SAKRIVANJE SCROLLBARA ZA LUKSUZNI OSJEĆAJ */
+::-webkit-scrollbar {
+  display: none;
 }
